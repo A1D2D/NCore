@@ -465,6 +465,12 @@ namespace SN {
       void setServer(TCPServer* server);
       void setEnv(Context context, tcp::socket socket);
       Context getContext() const;
+      TCPServer* getServer() const;
+
+      template<typename T>
+      T* getServer() const {
+         return getServer();
+      }
 
       void start();
       void send(const std::vector<uint8_t>& msg);
@@ -596,6 +602,12 @@ namespace SN {
       void setServer(UDPServer* server);
       void setEnv(Context context, UDPServer::UdpHandle handle);
       Context getContext() const;
+      UDPServer* getServer() const;
+
+      template<typename T>
+      T* getServer() const {
+         return getServer();
+      }
 
       void start();
       void send(const std::vector<uint8_t>& msg);

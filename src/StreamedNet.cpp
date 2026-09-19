@@ -802,6 +802,11 @@ namespace SN {
       return context;
    }
 
+   TCPServer* Connection<NetworkMode::TCP>::getServer() const {
+      if(!state) return nullptr;
+      return state->server;
+   }
+
    void Connection<NetworkMode::TCP>::start() {
       onStart();
    }
@@ -1177,6 +1182,11 @@ namespace SN {
    
    Context Connection<NetworkMode::UDP>::getContext() const {
       return context;
+   }
+
+   UDPServer* Connection<NetworkMode::UDP>::getServer() const {
+      if(!state) return nullptr;
+      return state->server;
    }
 
    void Connection<NetworkMode::UDP>::start() {
