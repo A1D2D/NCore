@@ -469,7 +469,7 @@ namespace SN {
 
       template<typename T>
       T* getServer() const {
-         return getServer();
+         return dynamic_cast<T*>(getServer());
       }
 
       void start();
@@ -606,7 +606,7 @@ namespace SN {
 
       template<typename T>
       T* getServer() const {
-         return getServer();
+         return dynamic_cast<T*>(getServer());
       }
 
       void start();

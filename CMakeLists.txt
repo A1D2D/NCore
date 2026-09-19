@@ -11,3 +11,10 @@ target_include_directories(NCore PUBLIC
 )
 
 target_compile_definitions(NCore PRIVATE ASIO_STANDALONE)
+
+if(WIN32)
+   target_link_libraries(NCore PUBLIC
+      ws2_32
+      mswsock
+   )
+endif()
