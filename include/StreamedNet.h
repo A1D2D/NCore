@@ -216,6 +216,30 @@ namespace SN {
    class ReadManager {
    };
 
+   class NetworkBase {
+   public:
+      virtual void disconnect() {
+         std::cout << "no override\n";
+      }
+      virtual void send(const std::vector<uint8_t>& msg) {
+         std::cout << "no override\n";
+      }
+   };
+
+   class BaseClient : public NetworkBase {
+   public:
+   };
+
+   class BaseServer : public NetworkBase {
+   public:
+      
+   };
+
+   class BaseConnection : public NetworkBase {
+   public:
+      
+   };
+
    class Resolver : public TickManager<Resolver> {
    private:
       friend class TickManager<Resolver>;
@@ -256,7 +280,7 @@ namespace SN {
 
    //TCP
    template<>
-   class Client<NetworkMode::TCP> : public TickManager<TCPClient>, WriteManager<TCPClient> {
+   class Client<NetworkMode::TCP> : public TickManager<TCPClient>, public WriteManager<TCPClient>, public BaseClient {
    private:
       friend class TickManager<TCPClient>;
       friend class WriteManager<TCPClient>;
@@ -289,8 +313,8 @@ namespace SN {
 
       void connect(std::vector<tcp::endpoint> endpoints);
       void connect(tcp::endpoint endpoint) { connect(std::vector<tcp::endpoint>{endpoint}); }
-      void send(const std::vector<uint8_t>& msg);
-      void disconnect();
+      void send(const std::vector<uint8_t>& msg) override;
+      void disconnect() override;
 
       void startRead();
       void stopRead();
@@ -310,7 +334,7 @@ namespace SN {
 
    //UDP
    template<>
-   class Client<NetworkMode::UDP> : public TickManager<UDPClient>, WriteManager<UDPClient> {
+   class Client<NetworkMode::UDP> : public TickManager<UDPClient>, public WriteManager<UDPClient>, public BaseClient {
    private:
       friend class TickManager<UDPClient>;
       friend class WriteManager<UDPClient>;
@@ -343,8 +367,8 @@ namespace SN {
 
       void connect(std::vector<udp::endpoint> endpoints);
       void connect(udp::endpoint endpoint) { connect(std::vector<udp::endpoint>{endpoint}); }
-      void send(const std::vector<uint8_t>& msg);
-      void disconnect();
+      void send(const std::vector<uint8_t>& msg) override;
+      void disconnect() override;
 
       void startRead();
       void stopRead();
@@ -365,7 +389,7 @@ namespace SN {
 
    //TCP
    template<>
-   class Server<NetworkMode::TCP> : public TickManager<TCPServer> {
+   class Server<NetworkMode::TCP> : public TickManager<TCPServer>, public BaseServer {
    private:
       friend class TickManager<TCPServer>;
       struct State {
@@ -411,8 +435,8 @@ namespace SN {
       void start(std::vector<tcp::endpoint> endpoints);
       void start(tcp::endpoint endpoint);
 
-      void send(const std::vector<uint8_t>& msg);
-      void disconnect();
+      void send(const std::vector<uint8_t>& msg) override;
+      void disconnect() override;
 
       void startAccept();
       void stopAccept();
@@ -433,7 +457,7 @@ namespace SN {
 
    //TCP
    template<>
-   class Connection<NetworkMode::TCP> : public TickManager<TCPConnection>, WriteManager<TCPConnection> {
+   class Connection<NetworkMode::TCP> : public TickManager<TCPConnection>, public WriteManager<TCPConnection>, public BaseConnection {
    private:
       friend class TickManager<TCPConnection>;
       friend class WriteManager<TCPConnection>;
@@ -473,8 +497,8 @@ namespace SN {
       }
 
       void start();
-      void send(const std::vector<uint8_t>& msg);
-      void disconnect();
+      void send(const std::vector<uint8_t>& msg) override;
+      void disconnect() override;
 
       void startRead();
       void stopRead();
@@ -495,7 +519,7 @@ namespace SN {
 
    //UDP
    template<>
-   class Server<NetworkMode::UDP> : public TickManager<UDPServer> {
+   class Server<NetworkMode::UDP> : public TickManager<UDPServer>, public BaseServer {
    public:
       struct UdpHandle {
          UdpHandle(udp::endpoint endpoint, udp::socket* socket) : endpoint(endpoint), socket(socket) {}
@@ -548,9 +572,9 @@ namespace SN {
       void start(std::vector<udp::endpoint> endpoints);
       void start(udp::endpoint endpoint);
 
-      void send(const std::vector<uint8_t>& msg);
+      void send(const std::vector<uint8_t>& msg) override;
       std::shared_ptr<SN::Connection<SN::NetworkMode::UDP>> connect(UdpHandle handle, const std::vector<uint8_t>& msg = {});
-      void disconnect();
+      void disconnect() override;
 
       void startRead();
       void stopRead();
@@ -571,7 +595,7 @@ namespace SN {
 
    //UDP
    template<>
-   class Connection<NetworkMode::UDP> : public TickManager<UDPConnection>, WriteManager<UDPConnection> {
+   class Connection<NetworkMode::UDP> : public TickManager<UDPConnection>, public WriteManager<UDPConnection>, public BaseConnection {
    private:
       friend class TickManager<UDPConnection>;
       friend class WriteManager<UDPConnection>;
@@ -610,8 +634,8 @@ namespace SN {
       }
 
       void start();
-      void send(const std::vector<uint8_t>& msg);
-      void disconnect();
+      void send(const std::vector<uint8_t>& msg) override;
+      void disconnect() override;
 
       virtual void onStart() {}
       virtual void onRead(std::vector<uint8_t> msg) {}
