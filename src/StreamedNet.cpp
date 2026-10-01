@@ -612,6 +612,7 @@ namespace SN {
       for (auto& c : state->connections) {//TODO: need mutext guard for server
          c->setServer(nullptr);
       }
+      disconnect();
       state->usageGuard.release();
    }
 
@@ -785,7 +786,8 @@ namespace SN {
    }
    
    void Connection<NetworkMode::TCP>::setServer(Server<NetworkMode::TCP>* server_) {
-      if(!state || !server_) return;
+      if(!state) return;
+      std::lock_guard guard(state->mutex);
       state->server = server_;
    }
 
@@ -804,6 +806,7 @@ namespace SN {
 
    TCPServer* Connection<NetworkMode::TCP>::getServer() const {
       if(!state) return nullptr;
+      
       return state->server;
    }
 
@@ -821,6 +824,7 @@ namespace SN {
       close();
       std::shared_ptr<State> st = state;
       onDisconnect();
+      std::lock_guard guard(st->mutex);
       if(!st || !st->server) return;
       st->server->removeConnection(this);
    }
