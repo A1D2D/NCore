@@ -737,6 +737,11 @@ namespace SN {
       return &state->socket;
    }
 
+   tcp::endpoint Connection<NetworkMode::TCP>::getEndpoint() const {
+      if (!state) return tcp::endpoint();
+      return state->socket.remote_endpoint();
+   }
+
    int Connection<NetworkMode::TCP>::getState(SN::State objState) const {
       switch (objState) {
       case Offline:
@@ -1158,6 +1163,11 @@ namespace SN {
       if (!state) return nullptr;
       return state->handle.socket;
    }
+
+   udp::endpoint Connection<NetworkMode::UDP>::getEndpoint() const {
+      if (!state) return udp::endpoint();
+      return state->handle.endpoint;
+   };
 
    int Connection<NetworkMode::UDP>::getState(SN::State objState) const {
       switch (objState) {

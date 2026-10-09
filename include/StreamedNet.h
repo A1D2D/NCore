@@ -275,6 +275,7 @@ namespace SN {
       Context getContext() const;
       TCPServer* getServer() const;
       tcp::socket* getSocket() const;
+      tcp::endpoint getEndpoint() const;
       int getState(SN::State state) const override;
 
       template <typename T>
@@ -422,6 +423,7 @@ namespace SN {
       UDPServer* getServer() const;
 
       udp::socket* getSocket() const;
+      udp::endpoint getEndpoint() const;
       int getState(SN::State state) const override;
 
       template <typename T>
