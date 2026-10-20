@@ -9,7 +9,7 @@ add_library(NCore STATIC
 )
 
 target_include_directories(NCore PUBLIC
-   "${CMAKE_CURRENT_SOURCE_DIR}/include"
+   "${CMAKE_CURRENT_SOURCE_DIR}/Include"
    "${CMAKE_CURRENT_SOURCE_DIR}/external/asio/include"
 )
 
