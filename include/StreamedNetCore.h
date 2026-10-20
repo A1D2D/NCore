@@ -14,17 +14,13 @@ namespace SN {
       UDP
    };
 
-   enum class SNI {
-      Offline = 0,
-      Online = 1,
-      Resolveing = 2,
-      Connecting = 4,
-      InRead = 8,
-      StopReadR = 16,
-      InWrite = 32,
-      StopWriteR = 64,
-      InAccept = 128,
-      StopAcceptR = 256
+   enum State {
+      Offline,
+      Created,
+      Online,
+      Reading,
+      Writing,
+      Accepting,
    };
 
    enum class Event {
@@ -265,6 +261,28 @@ namespace SN {
             st->reading = false;
          });
       }
+   };
+
+   class NetworkBase {
+   public:
+      virtual void disconnect() { std::cout << "no override\n"; }
+      virtual void send(const std::vector<uint8_t>& msg) { std::cout << "no override\n"; }
+      virtual int getState(State state) const { 
+         std::cout << "no override\n"; 
+         return 0;
+      }
+   };
+
+   class BaseClient : public NetworkBase {
+   public:
+   };
+
+   class BaseServer : public NetworkBase {
+   public:
+   };
+
+   class BaseConnection : public NetworkBase {
+   public:
    };
 } // namespace SN
 

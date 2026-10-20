@@ -3,9 +3,12 @@ project(NCore)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_library(NCore STATIC src/StreamedNet.cpp)
+add_library(NCore STATIC
+   Src/StreamedNet.cpp
+   Src/StreamedNetCore.cpp
+)
 
-target_include_directories(NCore PUBLIC 
+target_include_directories(NCore PUBLIC
    "${CMAKE_CURRENT_SOURCE_DIR}/include"
    "${CMAKE_CURRENT_SOURCE_DIR}/external/asio/include"
 )

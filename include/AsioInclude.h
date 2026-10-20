@@ -20,4 +20,4 @@
 using asio::ip::tcp;
 using asio::ip::udp;
 
-#endif //NCORE_ASIOINCLUDE_H
+#endif //~NCORE_ASIOINCLUDE_H
