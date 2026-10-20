@@ -106,6 +106,8 @@ namespace SN {
       friend class Resolver;
       template<typename T>
       friend class WriteManager;
+      template<typename T>
+      friend class ReadManager;
       template<NetworkMode Mode>
       friend class Client;
       template<NetworkMode Mode>
@@ -184,7 +186,7 @@ namespace SN {
    template<class Owner>
    class WriteManager {
    public:
-      void startWrite() {
+      virtual void startWrite() {
          auto& owner = static_cast<Owner&>(*this);
          auto state = owner.state;
          if(!state) return;
@@ -198,7 +200,7 @@ namespace SN {
          });
       }
 
-      void stopWrite() {
+      virtual void stopWrite() {
          auto& owner = static_cast<Owner&>(*this);
          auto state = owner.state;
          if(!state) return;
@@ -212,8 +214,57 @@ namespace SN {
       virtual void onWrite() {}
    };
 
+   class ReadManagerInterface {
+   public:
+      virtual void startRead() = 0;
+      virtual void stopRead() = 0;
+      virtual void setReadBufferSize(int size) = 0;
+      virtual int getReadBufferSize() const = 0;
+      virtual void onRead(std::vector<uint8_t> msg) {}
+   };
+
    template<class Owner>
-   class ReadManager {
+   class ReadManager : public ReadManagerInterface {
+   public:
+      virtual void setReadBufferSize(int size) override {
+         auto& owner = static_cast<Owner&>(*this);
+         auto state = owner.state;
+         if(!state) return;
+
+         state->readBuffer.resize(size);
+      }
+
+      virtual int getReadBufferSize() const override {
+         const auto& owner = static_cast<const Owner&>(*this);
+         auto state = owner.state;
+         if(!state) return 0;
+
+         return state->readBuffer.size();
+      }
+
+      virtual void startRead() override {
+         auto& owner = static_cast<Owner&>(*this);
+         auto state = owner.state;
+         if(!state) return;
+
+         asio::post(owner.context.state->io, [st = state]() {
+            std::lock_guard guard(st->mutex);
+            if (!st->reference || st->reading) return;
+            st->reading = true;
+            st->reference->doRead();
+         });
+      }
+
+      virtual void stopRead() override {
+         auto& owner = static_cast<Owner&>(*this);
+         auto state = owner.state;
+         if(!state) return;
+
+         asio::post(owner.context.state->io, [st = state]() {
+            if(!st) return;
+            st->reading = false;
+         });
+      }
    };
 
    class Resolver : public TickManager<Resolver> {
@@ -256,10 +307,11 @@ namespace SN {
 
    //TCP
    template<>
-   class Client<NetworkMode::TCP> : public TickManager<TCPClient>, WriteManager<TCPClient> {
+   class Client<NetworkMode::TCP> : public TickManager<TCPClient>, public WriteManager<TCPClient>, public ReadManager<TCPClient> {
    private:
       friend class TickManager<TCPClient>;
       friend class WriteManager<TCPClient>;
+      friend class ReadManager<TCPClient>;
       struct State {
          State() = delete;
          State(Client* clientPtr, Context context) : reference(clientPtr), socket(context.state->io), usageGuard(context), readBuffer(20*1024) {}
@@ -292,11 +344,7 @@ namespace SN {
       void send(const std::vector<uint8_t>& msg);
       void disconnect();
 
-      void startRead();
-      void stopRead();
-
       virtual void onConnect() {}
-      virtual void onRead(std::vector<uint8_t> msg) {}
       virtual void onDisconnect() {}
 
    private:
@@ -310,10 +358,11 @@ namespace SN {
 
    //UDP
    template<>
-   class Client<NetworkMode::UDP> : public TickManager<UDPClient>, WriteManager<UDPClient> {
+   class Client<NetworkMode::UDP> : public TickManager<UDPClient>, public WriteManager<UDPClient>, public ReadManager<UDPClient> {
    private:
       friend class TickManager<UDPClient>;
       friend class WriteManager<UDPClient>;
+      friend class ReadManager<UDPClient>;
       struct State {
          State() = delete;
          State(Client* clientPtr, Context context) : reference(clientPtr), socket(context.state->io), usageGuard(context), readBuffer(20*1024) {}
@@ -346,11 +395,7 @@ namespace SN {
       void send(const std::vector<uint8_t>& msg);
       void disconnect();
 
-      void startRead();
-      void stopRead();
-
       virtual void onConnect() {}
-      virtual void onRead(std::vector<uint8_t> msg) {}
       virtual void onDisconnect() {}
 
    private:
@@ -433,10 +478,11 @@ namespace SN {
 
    //TCP
    template<>
-   class Connection<NetworkMode::TCP> : public TickManager<TCPConnection>, WriteManager<TCPConnection> {
+   class Connection<NetworkMode::TCP> : public TickManager<TCPConnection>, public WriteManager<TCPConnection>, public ReadManager<TCPConnection> {
    private:
       friend class TickManager<TCPConnection>;
       friend class WriteManager<TCPConnection>;
+      friend class ReadManager<TCPConnection>;
       struct State {
          State() = delete;
          State(Connection* connectionPtr, Context context, tcp::socket socket_) : reference(connectionPtr), socket(std::move(socket_)), usageGuard(context), readBuffer(20*1024) {}
@@ -476,11 +522,7 @@ namespace SN {
       void send(const std::vector<uint8_t>& msg);
       void disconnect();
 
-      void startRead();
-      void stopRead();
-
       virtual void onStart() { startRead(); }
-      virtual void onRead(std::vector<uint8_t> msg) {}
       virtual void onDisconnect() {}
 
    private:
@@ -495,7 +537,7 @@ namespace SN {
 
    //UDP
    template<>
-   class Server<NetworkMode::UDP> : public TickManager<UDPServer> {
+   class Server<NetworkMode::UDP> : public TickManager<UDPServer>, public ReadManagerInterface {
    public:
       struct UdpHandle {
          UdpHandle(udp::endpoint endpoint, udp::socket* socket) : endpoint(endpoint), socket(socket) {}
@@ -516,6 +558,7 @@ namespace SN {
          Context::UsageGuard usageGuard;
          std::optional<Context::Callback> callback;
          bool reading = false;
+         int readBufferSize = 20*1024;
       };
    public:
       Server();
@@ -552,8 +595,11 @@ namespace SN {
       std::shared_ptr<SN::Connection<SN::NetworkMode::UDP>> connect(UdpHandle handle, const std::vector<uint8_t>& msg = {});
       void disconnect();
 
-      void startRead();
-      void stopRead();
+      void setReadBufferSize(int size) override;
+
+      int getReadBufferSize() const override;
+      void startRead() override;
+      void stopRead() override;
 
       virtual void onStart() {}
       virtual std::shared_ptr<SN::Connection<SN::NetworkMode::UDP>> onAccept(UdpHandle handle, std::vector<uint8_t> msg);
@@ -571,7 +617,7 @@ namespace SN {
 
    //UDP
    template<>
-   class Connection<NetworkMode::UDP> : public TickManager<UDPConnection>, WriteManager<UDPConnection> {
+   class Connection<NetworkMode::UDP> : public TickManager<UDPConnection>, public WriteManager<UDPConnection> {
    private:
       friend class TickManager<UDPConnection>;
       friend class WriteManager<UDPConnection>;

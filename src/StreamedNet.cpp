@@ -342,8 +342,9 @@ namespace SN {
             st->reading = false;
             return;
          }
+         auto data = std::vector<uint8_t>(st->readBuffer.begin(), st->readBuffer.begin() + std::min(length, st->readBuffer.size()));
          st->reference->doRead();
-         st->reference->onRead(std::vector<uint8_t>(st->readBuffer.begin(), st->readBuffer.begin() + std::min(length, st->readBuffer.size())));
+         st->reference->onRead(data);
       };
 
       state->socket.async_read_some(asio::buffer(state->readBuffer.data(), state->readBuffer.size()), readLambda);
@@ -369,32 +370,12 @@ namespace SN {
             return;
             st->reading = false;
          }
+         st->writeQueue.pop();
          st->reference->doWrite();
          st->reference->onWrite();
       };
 
-      asio::async_write(state->socket, asio::buffer(state->writeQueue.front().data(), state->writeQueue.front().size()), writeLambda);//TODO: ERROR prob starts lambda and pops idk
-      state->writeQueue.pop();
-   }
-
-   void Client<NetworkMode::TCP>::startRead() {
-      if(!state) return;
-
-      asio::post(context.state->io, [st = state]() {
-         std::lock_guard guard(st->mutex);
-         if (!st->reference || st->reading) return;
-         st->reading = true;
-         st->reference->doRead();
-      });
-   }
-
-   void Client<NetworkMode::TCP>::stopRead() {
-      if(!state) return;
-
-      asio::post(context.state->io, [st = state]() {
-         if(!st) return;
-         st->reading = false;
-      });
+      asio::async_write(state->socket, asio::buffer(state->writeQueue.front().data(), state->writeQueue.front().size()), writeLambda);
    }
    /*~TcpClient*/
 
@@ -516,8 +497,9 @@ namespace SN {
             return;
             st->reading = false;
          }
+         auto data = std::vector<uint8_t>(st->readBuffer.begin(), st->readBuffer.begin() + std::min(length, st->readBuffer.size()));
          st->reference->doRead();
-         st->reference->onRead(std::vector<uint8_t>(st->readBuffer.begin(), st->readBuffer.begin() + std::min(length, st->readBuffer.size())));
+         st->reference->onRead(data);
       };
 
       state->socket.async_receive(asio::buffer(state->readBuffer.data(), state->readBuffer.size()), readLambda);
@@ -543,32 +525,12 @@ namespace SN {
             return;
             st->reading = false;
          }
+         st->writeQueue.pop();
          st->reference->doWrite();
          st->reference->onWrite();
       };
 
       state->socket.async_send(asio::buffer(state->writeQueue.front().data(), state->writeQueue.front().size()), writeLambda);//TODO: ERROR prob starts lambda and pops idk
-      state->writeQueue.pop();
-   }
-
-   void Client<NetworkMode::UDP>::startRead() {
-      if(!state) return;
-
-      asio::post(context.state->io, [st = state]() {
-         std::lock_guard guard(st->mutex);
-         if (!st->reference || st->reading) return;
-         st->reading = true;
-         st->reference->doRead();
-      });
-   }
-
-   void Client<NetworkMode::UDP>::stopRead() {
-      if(!state) return;
-
-      asio::post(context.state->io, [st = state]() {
-         if(!st) return;
-         st->reading = false;
-      });
    }
    /*~UdpClient*/
 
@@ -860,8 +822,9 @@ namespace SN {
             st->reading = false;
             return;
          }
+         auto data = std::vector<uint8_t>(st->readBuffer.begin(), st->readBuffer.begin() + std::min(length, st->readBuffer.size()));
          st->reference->doRead();
-         st->reference->onRead(std::vector<uint8_t>(st->readBuffer.begin(), st->readBuffer.begin() + std::min(length, st->readBuffer.size())));
+         st->reference->onRead(data);
       };
 
       state->socket.async_read_some(asio::buffer(state->readBuffer.data(), state->readBuffer.size()), readLambda);
@@ -887,32 +850,12 @@ namespace SN {
             return;
             st->writing = false;
          }
+         st->writeQueue.pop();
          st->reference->doWrite();
          st->reference->onWrite();
       };
 
-      asio::async_write(state->socket, asio::buffer(state->writeQueue.front().data(), state->writeQueue.front().size()), writeLambda);//TODO: ERROR prob starts lambda and pops idk
-      state->writeQueue.pop();
-   }
-   
-   void Connection<NetworkMode::TCP>::startRead() {
-      if(!state) return;
-
-      asio::post(context.state->io, [st = state]() {
-         std::lock_guard guard(st->mutex);
-         if (!st->reference || st->reading) return;
-         st->reading = true;
-         st->reference->doRead();
-      });
-   }
-
-   void Connection<NetworkMode::TCP>::stopRead() {
-      if(!state) return;
-
-      asio::post(context.state->io, [st = state]() {
-         if(!st) return;
-         st->reading = false;
-      });
+      asio::async_write(state->socket, asio::buffer(state->writeQueue.front().data(), state->writeQueue.front().size()), writeLambda);
    }
    /*~TcpConnection*/
 
@@ -1050,7 +993,7 @@ namespace SN {
          std::vector<uint8_t> readBuffer;
       };
 
-      auto input = std::make_shared<Input>(4096);
+      auto input = std::make_shared<Input>(state->readBufferSize);
 
       auto readLambda = [st = state, socket, input](std::error_code ec, std::size_t length) {
          if(!st || !input || !st->reading) return;
@@ -1070,7 +1013,6 @@ namespace SN {
             std::lock_guard guard(st->mutex);
             if (!st->reference) return;
             if(connection) connection->disconnect();
-            //st->reference->doRead(socket); TODO: ?
             return;
          }
          
@@ -1091,11 +1033,24 @@ namespace SN {
             connection->start();
          }
          connection->onRead(msg);
+         st->reference->onRead(msg);//TODO: duplicated callback may produce errors
       };
 
       socket->async_receive_from(asio::buffer(input->readBuffer.data(), input->readBuffer.size()), input->endpoint, readLambda);
    }
-   
+
+   int Server<NetworkMode::UDP>::getReadBufferSize() const {
+      if (!state) return 0;
+
+      return state->readBufferSize;
+   }
+
+   void Server<NetworkMode::UDP>::setReadBufferSize(int size) {
+      if (!state) return;
+
+      state->readBufferSize = size;
+   }
+
    void Server<NetworkMode::UDP>::startRead() {
       if(!state) return;
 
@@ -1111,10 +1066,6 @@ namespace SN {
       });
    }
 
-   std::shared_ptr<SN::Connection<SN::NetworkMode::UDP>> Server<NetworkMode::UDP>::onAccept(UdpHandle handle, std::vector<uint8_t> msg) {
-      return std::make_shared<SN::Connection<SN::NetworkMode::UDP>>(this, handle);
-   }
-   
    void Server<NetworkMode::UDP>::stopRead() {
       if(!state) return;
 
@@ -1122,6 +1073,10 @@ namespace SN {
          if(!st) return;
          st->reading = false;
       });
+   }
+
+   std::shared_ptr<SN::Connection<SN::NetworkMode::UDP>> Server<NetworkMode::UDP>::onAccept(UdpHandle handle, std::vector<uint8_t> msg) {
+      return std::make_shared<SN::Connection<SN::NetworkMode::UDP>>(this, handle);
    }
    /*~UdpServer*/
 
@@ -1233,12 +1188,12 @@ namespace SN {
             return;
             st->writing = false;
          }
+         st->writeQueue.pop();
          st->reference->doWrite();
          st->reference->onWrite();
       };
-
       state->handle.socket->async_send_to(asio::buffer(state->writeQueue.front().data(), state->writeQueue.front().size()), state->handle.endpoint, writeLambda);
-      state->writeQueue.pop();
+      
    }
    /*~UdpConnection*/
 }

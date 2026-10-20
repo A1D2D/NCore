@@ -1,6 +1,7 @@
 #ifndef NCORE_PACKET_NET_TEMPLATED_H
 #define NCORE_PACKET_NET_TEMPLATED_H
 
+#include <cstdint>
 #include <map>
 #include <string>
 #include <vector>
@@ -111,7 +112,7 @@ namespace PN {
       }
       else if constexpr (std::is_trivially_copyable_v<T>) {
          if (offset + sizeof(T) > buf.size()) return false;
-         std::memcpy(&v, buf.data() + offset, sizeof(T));
+         memcpy(&v, buf.data() + offset, sizeof(T));
          offset += sizeof(T);
          return true;
       }
