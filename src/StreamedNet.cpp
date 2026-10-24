@@ -219,7 +219,7 @@ namespace SN {
             st->reading = false;
             std::lock_guard guard(st->mutex);
             if (!st->reference) return;
-            st->reference->disconnect();
+            st->reference->disconnect(true);
             return;
          }
 
@@ -392,7 +392,7 @@ namespace SN {
             st->reading = false;
             std::lock_guard guard(st->mutex);
             if (!st->reference) return;
-            st->reference->disconnect();
+            st->reference->disconnect(true);
             return;
          }
 
@@ -475,7 +475,7 @@ namespace SN {
       for (auto& c : state->connections) { // TODO: need mutext guard for server
          c->setServer(nullptr);
       }
-      disconnect();
+      disconnect(true);
       state->usageGuard.release();
    }
 
@@ -761,7 +761,7 @@ namespace SN {
             st->reading = false;
             std::lock_guard guard(st->mutex);
             if (!st->reference) return;
-            st->reference->disconnect();
+            st->reference->disconnect(true);
             return;
          }
 
@@ -838,6 +838,8 @@ namespace SN {
 
    void Server<NetworkMode::UDP>::shutdown() {
       if (!state) return;
+
+      disconnect(true);
 
       std::lock_guard guard(state->mutex);
       state->reference = nullptr;
@@ -979,7 +981,7 @@ namespace SN {
             st->reading = false;
             std::lock_guard guard(st->mutex);
             if (!st->reference) return;
-            if(connection) connection->disconnect();
+            if(connection) connection->disconnect(true);
             return;
          }
 
