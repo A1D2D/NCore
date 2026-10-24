@@ -265,7 +265,7 @@ namespace SN {
 
    class NetworkBase {
    public:
-      virtual void disconnect() { std::cout << "no override\n"; }
+      virtual void disconnect(bool callback = false) { std::cout << "no override\n"; }
       virtual void send(const std::vector<uint8_t>& msg) { std::cout << "no override\n"; }
       virtual int getState(State state) const { 
          std::cout << "no override\n"; 

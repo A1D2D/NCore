@@ -89,7 +89,7 @@ namespace SN {
       void connect(std::vector<tcp::endpoint> endpoints);
       void connect(tcp::endpoint endpoint) { connect(std::vector<tcp::endpoint>{endpoint}); }
       void send(const std::vector<uint8_t>& msg) override;
-      void disconnect() override;
+      void disconnect(bool callback = false) override;
 
       virtual void onConnect() {}
       virtual void onDisconnect() {}
@@ -143,7 +143,7 @@ namespace SN {
       void connect(std::vector<udp::endpoint> endpoints);
       void connect(udp::endpoint endpoint) { connect(std::vector<udp::endpoint>{endpoint}); }
       void send(const std::vector<uint8_t>& msg) override;
-      void disconnect() override;
+      void disconnect(bool callback = false) override;
 
       virtual void onConnect() {}
       virtual void onDisconnect() {}
@@ -211,7 +211,7 @@ namespace SN {
       void start(tcp::endpoint endpoint);
 
       void send(const std::vector<uint8_t>& msg) override;
-      void disconnect() override;
+      void disconnect(bool callback = false) override;
 
       void startAccept();
       void stopAccept();
@@ -279,7 +279,7 @@ namespace SN {
 
       void start();
       void send(const std::vector<uint8_t>& msg) override;
-      void disconnect() override;
+      void disconnect(bool callback = false) override;
 
       virtual void onStart() { startRead(); }
       virtual void onDisconnect() {}
@@ -356,7 +356,7 @@ namespace SN {
 
       void send(const std::vector<uint8_t>& msg) override;
       std::shared_ptr<SN::Connection<SN::NetworkMode::UDP>> connect(UdpHandle handle, const std::vector<uint8_t>& msg = {});
-      void disconnect() override;
+      void disconnect(bool callback = false) override;
 
       void setReadBufferSize(int size) override;
       int getReadBufferSize() const override;
@@ -425,7 +425,7 @@ namespace SN {
 
       void start();
       void send(const std::vector<uint8_t>& msg) override;
-      void disconnect() override;
+      void disconnect(bool callback = false) override;
 
       virtual void onStart() {}
       virtual void onRead(std::vector<uint8_t> msg) {}

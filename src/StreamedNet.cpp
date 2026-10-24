@@ -188,9 +188,9 @@ namespace SN {
       startWrite();
    }
 
-   void Client<NetworkMode::TCP>::disconnect() {
+   void Client<NetworkMode::TCP>::disconnect(bool callback) {
       close();
-      onDisconnect();
+      if(callback) onDisconnect();
    }
 
    void Client<NetworkMode::TCP>::close() {
@@ -361,9 +361,9 @@ namespace SN {
       startWrite();
    }
 
-   void Client<NetworkMode::UDP>::disconnect() {
+   void Client<NetworkMode::UDP>::disconnect(bool callback) {
       close();
-      onDisconnect();
+      if(callback) onDisconnect();
    }
 
    void Client<NetworkMode::UDP>::close() {
@@ -545,7 +545,7 @@ namespace SN {
       }
    }
 
-   void Server<NetworkMode::TCP>::disconnect() {
+   void Server<NetworkMode::TCP>::disconnect(bool callback) {
       if (!state) return;
       state->connections.clear();
       stopAccept();
@@ -726,10 +726,10 @@ namespace SN {
       startWrite();
    }
 
-   void Connection<NetworkMode::TCP>::disconnect() {
+   void Connection<NetworkMode::TCP>::disconnect(bool callback) {
       close();
       std::shared_ptr<State> st = state;
-      onDisconnect();
+      if(callback) onDisconnect();
       std::lock_guard guard(st->mutex);
       if (!st || !st->server) return;
       st->server->removeConnection(this);
@@ -934,7 +934,7 @@ namespace SN {
       return connection;
    }
 
-   void Server<NetworkMode::UDP>::disconnect() {
+   void Server<NetworkMode::UDP>::disconnect(bool callback) {
       if (!state) return;
       state->connections.clear();
       stopRead();
@@ -1142,10 +1142,10 @@ namespace SN {
       startWrite();
    }
 
-   void Connection<NetworkMode::UDP>::disconnect() {
+   void Connection<NetworkMode::UDP>::disconnect(bool callback) {
       close();
       std::shared_ptr<State> st = state;
-      onDisconnect();
+      if(callback) onDisconnect();
       if (!st || !st->server) return;
       st->server->removeConnection(this);
    }
